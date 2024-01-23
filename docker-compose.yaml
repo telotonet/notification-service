@@ -1,0 +1,76 @@
+version: '3'
+
+services:
+  app:
+    build:
+      context: ./app/
+    env_file:
+      - .env
+    volumes:
+      - ./app/:/opt/app/
+    ports:
+      - "8000:8000"
+    command: sh -c "python /opt/app/src/manage.py runserver 0.0.0.0:8000"
+    restart: always
+    depends_on:
+      - postgres
+
+  postgres:
+    image: postgres:16.0
+    ports:
+      - "5432:5432"
+    env_file:
+      - .env
+    restart: always
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  worker:
+    build:
+      context: ./app/
+    hostname: worker
+    entrypoint: celery
+    command: -A celery_app.app worker --loglevel=info
+    volumes:
+      - ./app/:/opt/app/
+    env_file:
+      - .env
+    depends_on:
+      - app
+      - redis
+      - postgres
+
+  redis:
+    image: redis:7.2.3-alpine
+    hostname: redis
+
+  flower:
+    build:
+      context: ./app/
+    hostname: flower
+    entrypoint: celery
+    command: -A celery_app.app flower
+    volumes:
+      - ./app/:/opt/app/
+    depends_on:
+      - app
+      - redis
+      - worker
+    ports:
+      - "5555:5555"
+    env_file:
+      - .env
+
+  py-linters:
+    build:
+      context: ./py-linters/
+    image: py-linters:latest
+    volumes:
+      - ./py-linters/pyproject.toml:/opt/linters/pyproject.toml
+      - ./py-linters/poetry.lock:/opt/linters/poetry.lock
+      # mount source code to check a code with linter running inside a container
+      - ./app:/app
+    command: 'echo Skipped'
+
+volumes:
+  postgres_data:
