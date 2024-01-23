@@ -2,7 +2,8 @@ import zoneinfo
 from django.db import models
 from django.core.exceptions import ValidationError
 from django.core.validators import RegexValidator
-
+import logging
+logger = logging.getLogger(__name__)
 
 class Mailing(models.Model):
     content = models.TextField('Сообщение')
@@ -10,6 +11,9 @@ class Mailing(models.Model):
     end_at = models.DateTimeField('Время окончания')
     operator_code = models.CharField('Код оператора клиента', max_length=3, blank=True)
     client_tag = models.CharField('Тег клиента', max_length=50, blank=True)
+    time_interval_start = models.TimeField('Начало временного интервала', null=True, blank=True)
+    time_interval_end = models.TimeField('Конец временного интервала', null=True, blank=True)
+
 
     class Meta:
         verbose_name = 'Рассылка'
@@ -20,6 +24,7 @@ class Mailing(models.Model):
 
     def clean(self):
         if self.end_at <= self.start_at:
+            logger.error(f"Mailing validation error: ID {self.id}")
             raise ValidationError(
                 'Время начала рассылки должно быть позже её окончания.',
             )

@@ -23,6 +23,8 @@ class MailingSerializer(serializers.ModelSerializer):
     id = serializers.ReadOnlyField()  # noqa A003
     sent_messages_count = serializers.SerializerMethodField(read_only=True)
     unsent_messages_count = serializers.SerializerMethodField(read_only=True)
+    time_interval_start = serializers.TimeField(format="%H:%M", required=False, allow_null=True)
+    time_interval_end = serializers.TimeField(format="%H:%M", required=False, allow_null=True)
 
     class Meta:
         model = Mailing
@@ -35,6 +37,8 @@ class MailingSerializer(serializers.ModelSerializer):
             'client_tag',
             'sent_messages_count',
             'unsent_messages_count',
+            'time_interval_start',
+            'time_interval_end',
         ]
 
     def get_sent_messages_count(self, obj):
